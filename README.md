@@ -68,7 +68,17 @@ All seeded organizations, mines and documents are fictitious.
 
 ## 4. Security model, and how to verify each claim
 
-This is the part worth reviewing. Each row is a claim you can check yourself.
+This is the part worth reviewing. Each claim below is one you can check by hand,
+and all of them are also asserted automatically:
+
+```bash
+pnpm db:seed
+pnpm dev                # one terminal
+pnpm verify:security    # another — exits non-zero if any guarantee regresses
+```
+
+`scripts/verify-security.ts` signs in as each role over the real HTTP API and
+checks the responses; it is evidence, not decoration.
 
 ### 4.1 An unapproved mine is not reachable publicly
 
@@ -240,7 +250,8 @@ restructuring what exists.
 
 ## 7. Notes
 
-- The repository should be **private** while evaluation is under way; the test
-  credentials above are live on the staging deployment.
+- The accounts in section 3 are seed accounts for a disposable evaluation
+  environment holding fictitious data. They are not production credentials and
+  the environment can be torn down and reseeded at any time.
 - All code, schema and infrastructure remain the client's property, in the
   client's accounts.
