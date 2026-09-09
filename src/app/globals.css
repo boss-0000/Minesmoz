@@ -1,0 +1,89 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f7f7f5;
+  --surface: #ffffff;
+  --foreground: #16181d;
+  --muted: #5c6470;
+  --border: #e2e2dd;
+  --accent: #8a5a20;
+  --accent-soft: #f3e9dc;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-line: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #101215;
+    --surface: #181b20;
+    --foreground: #eceef1;
+    --muted: #98a1ad;
+    --border: #2a2f37;
+    --accent: #d9a066;
+    --accent-soft: #2b2118;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Shared primitives — kept small on purpose; this prototype is about the
+   workflow and its permissions, not about a design system. */
+@layer components {
+  .card {
+    @apply rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-5;
+  }
+
+  .label {
+    @apply mb-1 block text-sm font-medium text-[var(--foreground)];
+  }
+
+  .input {
+    @apply w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm
+           text-[var(--foreground)] outline-none transition
+           focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20;
+  }
+
+  /* Tailwind v4 only lets @apply pull in real utilities, not other custom
+     classes, so the shared button base is repeated rather than composed. */
+  .btn,
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium
+           transition disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .btn-primary {
+    @apply bg-[var(--accent)] text-white hover:opacity-90;
+  }
+
+  .btn-secondary {
+    @apply border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)]
+           hover:border-[var(--accent)];
+  }
+
+  .btn-danger {
+    @apply border border-red-300 bg-transparent text-red-700 hover:bg-red-50
+           dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/40;
+  }
+
+  .hint {
+    @apply text-xs text-[var(--muted)];
+  }
+
+  .error {
+    @apply mt-1 text-xs text-red-600 dark:text-red-400;
+  }
+}

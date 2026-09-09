@@ -1,0 +1,175 @@
+// MinesMoz — Phase 1 vertical slice
+// Scope: user registration -> organization profile -> mine draft -> private
+// document upload -> submit for review -> admin approve/reject -> public page.
+//
+// Design notes that matter for review:
+//  * Mine.publicId is a non-sequential cuid used in every public URL and API
+//    path. Sequential integer ids are never exposed, so draft records cannot be
+//    discovered by enumeration.
+//  * MineStatus is the single source of truth for publication. Only APPROVED is
+//    ever readable without a session.
+//  * Documents store an opaque storageKey, never a fetchable URL. URLs are
+//    minted per-request, short-lived and signed.
+//  * ModerationEvent is append-only so every state transition is attributable.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MINE_OWNER
+}
+
+enum MineStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum MineralType {
+  RUBY
+  TOURMALINE
+  GARNET
+  AQUAMARINE
+  GOLD
+  GRAPHITE
+  HEAVY_SANDS
+  COAL
+  OTHER
+}
+
+enum DocumentType {
+  MINING_LICENSE
+  GEOLOGICAL_SURVEY
+  OWNERSHIP_PROOF
+  ENVIRONMENTAL_PERMIT
+  OTHER
+}
+
+enum ModerationAction {
+  SUBMITTED
+  APPROVED
+  REJECTED
+  WITHDRAWN
+}
+
+model User {
+  id             String        @id @default(cuid())
+  email          String        @unique
+  passwordHash   String
+  name           String
+  role           Role          @default(MINE_OWNER)
+  locale         String        @default("pt")
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  uploadedDocuments MineDocument[]    @relation("UploadedBy")
+  moderationEvents  ModerationEvent[] @relation("ModeratedBy")
+
+  @@index([organizationId])
+}
+
+model Organization {
+  id                 String             @id @default(cuid())
+  name               String
+  registrationNumber String?
+  country            String             @default("MZ")
+  province           String?
+  contactEmail       String?
+  contactPhone       String?
+  description        String?
+  verificationStatus VerificationStatus @default(UNVERIFIED)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  members User[]
+  mines   Mine[]
+}
+
+model Mine {
+  id       String @id @default(cuid())
+  // Public-facing identifier. Non-sequential, safe to expose.
+  publicId String @unique @default(cuid())
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  name        String
+  mineralType MineralType @default(OTHER)
+  province    String
+  district    String?
+  latitude    Float?
+  longitude   Float?
+  description String?
+
+  licenceReference   String?
+  investmentMinUsd   Int?
+  investmentMaxUsd   Int?
+
+  status          MineStatus @default(DRAFT)
+  rejectionReason String?
+  submittedAt     DateTime?
+  reviewedAt      DateTime?
+  reviewedById    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  documents        MineDocument[]
+  moderationEvents ModerationEvent[]
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+model MineDocument {
+  id     String @id @default(cuid())
+  mineId String
+  mine   Mine   @relation(fields: [mineId], references: [id], onDelete: Cascade)
+
+  // Opaque object-store key. Never rendered to a client and never public.
+  storageKey   String       @unique
+  originalName String
+  mimeType     String
+  sizeBytes    Int
+  documentType DocumentType @default(OTHER)
+
+  uploadedById String
+  uploadedBy   User   @relation("UploadedBy", fields: [uploadedById], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([mineId])
+}
+
+model ModerationEvent {
+  id     String @id @default(cuid())
+  mineId String
+  mine   Mine   @relation(fields: [mineId], references: [id], onDelete: Cascade)
+
+  action ModerationAction
+  reason String?
+
+  actorId String
+  actor   User   @relation("ModeratedBy", fields: [actorId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([mineId])
+}
