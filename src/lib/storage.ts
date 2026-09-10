@@ -24,7 +24,21 @@ const LOCAL_ROOT = path.join(process.cwd(), ".local-storage");
 export type StorageDriver = "s3" | "local";
 
 export function activeDriver(): StorageDriver {
-  return process.env.S3_BUCKET && process.env.AWS_ACCESS_KEY_ID ? "s3" : "local";
+  const hasS3 = Boolean(process.env.S3_BUCKET && process.env.AWS_ACCESS_KEY_ID);
+
+  // The local driver must never run on a serverless host. Filesystems there are
+  // ephemeral and per-instance, so an upload would report success, then vanish
+  // on the next cold start or land on an instance that cannot see it. Silent
+  // data loss is worse than a refusal, so this fails loudly instead.
+  if (!hasS3 && process.env.NODE_ENV === "production") {
+    throw new Error(
+      "No object storage is configured. Set S3_BUCKET, AWS_ACCESS_KEY_ID, " +
+        "AWS_SECRET_ACCESS_KEY and AWS_REGION. The local filesystem driver is " +
+        "for development only and would lose uploaded documents in production.",
+    );
+  }
+
+  return hasS3 ? "s3" : "local";
 }
 
 /** Opaque, unguessable, and namespaced by mine so objects are easy to reap. */

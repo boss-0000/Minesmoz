@@ -219,8 +219,13 @@ decision is attributable.
 ### Simplified, and clearly so
 - **Storage driver.** With `S3_BUCKET` unset, uploads go to the local
   filesystem and are streamed through the authorized route. The privacy
-  guarantee holds in both modes, but staging/production should run S3 so the
-  signed-URL expiry is exercised.
+  guarantee holds in both modes, but the 5-minute signed-URL expiry only
+  exercises on S3.
+
+  The local driver **refuses to run when `NODE_ENV=production`**. Serverless
+  filesystems are ephemeral and per-instance, so an upload would report success
+  and then disappear; a deployment without object storage fails loudly rather
+  than losing documents quietly. Configure S3 or R2 before deploying.
 - **Organization verification** is displayed and admin-controlled at the data
   level, but no admin screen to change it is included — it was not part of the
   requested flow.
