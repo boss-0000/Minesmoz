@@ -18,7 +18,12 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  // Pooled connection for application queries.
   url      = env("DATABASE_URL")
+  // Direct connection for migrations. Neon's pooler runs in transaction mode,
+  // which cannot hold the advisory locks and DDL session state that migrations
+  // need, so `migrate deploy` has to bypass it.
+  directUrl = env("DATABASE_URL_UNPOOLED")
 }
 
 enum Role {

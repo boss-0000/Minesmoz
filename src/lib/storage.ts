@@ -62,12 +62,19 @@ function resolveLocalPath(key: string): string {
 
 async function s3Client() {
   const { S3Client } = await import("@aws-sdk/client-s3");
+  const endpoint = process.env.S3_ENDPOINT?.trim();
+
   return new S3Client({
-    region: process.env.AWS_REGION ?? "eu-west-1",
+    // R2 ignores the region but the SDK still requires one; "auto" is what
+    // Cloudflare documents.
+    region: process.env.AWS_REGION ?? (endpoint ? "auto" : "eu-west-1"),
     credentials: {
       accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
       secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
     },
+    // Set for S3-compatible services (Cloudflare R2, MinIO, Backblaze B2).
+    // Left undefined for real AWS S3, which resolves its own endpoint.
+    ...(endpoint ? { endpoint, forcePathStyle: true } : {}),
   });
 }
 
