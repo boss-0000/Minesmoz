@@ -73,12 +73,18 @@ and all of them are also asserted automatically:
 
 ```bash
 pnpm db:seed
+pnpm verify:workflow    # 21 checks — the state machine and its guards
 pnpm dev                # one terminal
-pnpm verify:security    # another — exits non-zero if any guarantee regresses
+pnpm verify:security    # another — 17 checks over real HTTP
 ```
 
-`scripts/verify-security.ts` signs in as each role over the real HTTP API and
-checks the responses; it is evidence, not decoration.
+- `scripts/verify-security.ts` signs in as each role over the real HTTP API and
+  checks status codes, payload shape and headers.
+- `scripts/verify-workflow.ts` drives the moderation state machine against the
+  real database: every legal transition, every illegal one, and the audit trail.
+
+Both exit non-zero if a guarantee regresses. **38/38 currently pass** against
+PostgreSQL 17. They are evidence, not decoration.
 
 ### 4.1 An unapproved mine is not reachable publicly
 
@@ -224,8 +230,9 @@ decision is attributable.
 - **One member per organization.** The schema supports many; no invite flow.
 - **Rate limiting** is not implemented; it belongs at the platform edge and is
   noted rather than faked.
-- **No automated test suite.** Verification steps are documented above instead.
-  Tests are budgeted in Milestone 1, not in an unpaid prototype.
+- **No unit-test suite.** There are two executable verification scripts (38
+  assertions covering authorization and the state machine), but no component or
+  unit tests. A full suite is budgeted in Milestone 1.
 - Seeded content is fictitious, including licence references.
 
 ### Deliberately excluded
